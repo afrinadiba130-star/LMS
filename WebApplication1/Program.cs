@@ -19,9 +19,13 @@ namespace WebApplication1
 
             var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                 ?? builder.Configuration.GetConnectionString("LibraryDb");
-            connectionString = connectionString.Trim('"', '\'');
-            if (connectionString.StartsWith("postgres://"))
+            Console.WriteLine($"DATABASE_URL raw: {Environment.GetEnvironmentVariable("DATABASE_URL")}");
+            Console.WriteLine($"Connection string before trim: '{connectionString}'");
+            connectionString = connectionString?.Trim('"', '\'');
+            Console.WriteLine($"Connection string after trim: '{connectionString}'");
+            if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
                 connectionString = "postgresql://" + connectionString.Substring("postgres://".Length);
+            Console.WriteLine($"Final connection string prefix: {connectionString?.Substring(0, Math.Min(30, connectionString.Length))}");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
