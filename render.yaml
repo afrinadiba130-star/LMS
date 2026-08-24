@@ -1,12 +1,9 @@
 services:
   - type: web
     name: LMS
-    runtime: dotnet
-    buildCommand: dotnet publish -c Release -o ./output
-    startCommand: dotnet ./output/WebApplication1.dll
+    env: docker
+    dockerfilePath: Dockerfile
     envVars:
-      - key: DOTNET_VERSION
-        value: 10.0.x
       - key: DATABASE_URL
         fromDatabase:
           name: library-db
