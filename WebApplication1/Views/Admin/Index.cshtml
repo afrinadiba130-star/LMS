@@ -1,0 +1,185 @@
+@{
+    ViewData["Title"] = "Admin Panel";
+    var stats = (DashboardStatsDto?)ViewBag.Stats ?? new DashboardStatsDto();
+    var mostBorrowed = (List<MostBorrowedBookDto>?)ViewBag.MostBorrowed ?? new();
+    var overdue = (List<BorrowRecord>?)ViewBag.OverdueRecords ?? new();
+}
+
+<h2 class="mb-4">Admin Panel</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-primary shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Books</h5>
+                <h3 class="mb-0">@stats.TotalBooks</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-success shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Active Borrows</h5>
+                <h3 class="mb-0">@stats.ActiveBorrows</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-warning shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Overdue</h5>
+                <h3 class="mb-0">@stats.OverdueBorrows</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-info shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Members</h5>
+                <h3 class="mb-0">@ViewBag.MemberCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-danger shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Unpaid Fines</h5>
+                <h3 class="mb-0">Tk @stats.UnpaidFines.ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card text-bg-secondary shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">Invoices</h5>
+                <h3 class="mb-0">@ViewBag.InvoiceCount <small class="fs-6">(@ViewBag.UnpaidInvoiceCount unpaid)</small></h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Catalog</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Add, edit or remove books; check availability.</p>
+                <a asp-controller="Books" asp-action="Index" class="btn btn-primary w-100">Manage Books</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Members</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">View members, their borrows and fines; change member type.</p>
+                <a asp-controller="Members" asp-action="Index" class="btn btn-primary w-100">Manage Members</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Borrowing</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Issue and return books, view borrow history.</p>
+                <a asp-controller="Borrow" asp-action="Issue" class="btn btn-outline-success w-100 mb-2">Issue Book</a>
+                <a asp-controller="Borrow" asp-action="Return" class="btn btn-outline-warning w-100">Return Book</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Fines &amp; Reports</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Track invoices and download PDF reports.</p>
+                <a asp-controller="Invoices" asp-action="Index" class="btn btn-outline-danger w-100 mb-2">Manage Invoices</a>
+                <a asp-controller="Reports" asp-action="Index" class="btn btn-outline-danger w-100">PDF Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0">Overdue Borrows</h5></div>
+            <div class="card-body p-0">
+                @if (overdue.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No overdue borrows.</p>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr><th>Book</th><th>Member</th><th>Due</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in overdue)
+                            {
+                                <tr>
+                                    <td>@r.Book.Title</td>
+                                    <td>@r.User.FullName</td>
+                                    <td>@r.DueDate.ToString("dd MMM yyyy")</td>
+                                    <td><a asp-controller="Borrow" asp-action="Return" asp-route-id="@r.Id" class="btn btn-sm btn-danger">Return</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white"><h5 class="mb-0">Most Borrowed Books</h5></div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr><th>#</th><th>Book</th><th>Genre</th><th>Borrows</th></tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < mostBorrowed.Count; i++)
+                        {
+                            var b = mostBorrowed[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>@b.Title <small class="text-muted d-block">@b.Author</small></td>
+                                <td>@b.Genre</td>
+                                <td><span class="badge text-bg-success">@b.BorrowCount</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (mostBorrowed.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No completed borrows yet.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-secondary text-white"><h5 class="mb-0">Member Type Rules</h5></div>
+    <div class="card-body">
+        <table class="table table-sm mb-0">
+            <thead class="table-light">
+                <tr><th>Type</th><th>Max Books</th><th>Fine/Day</th><th>Fee/Month</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in (List<WebApplication1.Models.Entities.UserType>)ViewBag.UserTypes)
+                {
+                    <tr>
+                        <td>@t.TypeName</td>
+                        <td>@t.MaxBorrowLimit</td>
+                        <td>Tk @t.FineRatePerDay.ToString("N2")</td>
+                        <td>Tk @t.MonthlyFee.ToString("N2")</td>
+                        <td></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <a asp-controller="UserTypes" asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">Edit Rules</a>
+    </div>
+</div>

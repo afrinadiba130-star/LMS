@@ -1,0 +1,119 @@
+@model List<BorrowRecord>
+@{
+    ViewData["Title"] = "Borrow History";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Borrow History</h2>
+    @if (isAdmin)
+    {
+        <div>
+            <a asp-action="Issue" class="btn btn-success me-2">Issue Book</a>
+            <a asp-action="Return" class="btn btn-warning">Return Book</a>
+        </div>
+    }
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">No borrow records found.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Book</th>
+                    @if (isAdmin) { <th>Member</th> }
+                    <th>Borrowed</th>
+                    <th>Due</th>
+                    <th>Returned</th>
+                    <th>Status</th>
+                    <th>Fine (BDT)</th>
+                    @if (!isAdmin) { <th></th> }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@r.Book.Title</strong>
+                            <div class="small text-muted">@r.Book.Author</div>
+                        </td>
+                        @if (isAdmin)
+                        {
+                            <td>@r.User.FullName <span class="badge text-bg-secondary ms-1">@r.User.UserType.TypeName</span></td>
+                        }
+                        <td>@r.BorrowDate.ToString("dd MMM yyyy")</td>
+                        <td>@r.DueDate.ToString("dd MMM yyyy")</td>
+                        <td>@(r.ReturnDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                        <td>
+                            @if (r.IsReturned)
+                            {
+                                <span class="badge text-bg-success">Returned</span>
+                            }
+                            else if (r.DueDate < DateTime.Today)
+                            {
+                                <span class="badge text-bg-danger">Overdue</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-primary">Borrowed</span>
+                            }
+                        </td>
+                        <td>
+                            @if (r.FineAmount > 0)
+                            {
+                                <span class="badge text-bg-danger">Tk @r.FineAmount.ToString("N2")</span>
+                                if (r.Invoice != null)
+                                {
+                                    if (r.Invoice.IsPaid)
+                                    {
+                                        <span class="badge text-bg-success ms-1">Paid</span>
+                                    }
+                                    else if (!isAdmin)
+                                    {
+                                        <span class="badge text-bg-warning ms-1">Unpaid</span>
+                                        <form asp-action="PayFine" method="post" class="mt-1">
+                                            <input type="hidden" name="invoiceId" value="@r.Invoice.Id" />
+                                            <div class="input-group input-group-sm">
+                                                <input name="trxId" class="form-control" placeholder="bKash TrxID" required />
+                                                <input name="senderNumber" class="form-control" placeholder="Sender number" required />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Pay</button>
+                                            </div>
+                                        </form>
+                                        <div class="small text-muted mt-1">Send Tk @r.FineAmount.ToString("N0") to bKash <strong>@WebApplication1.AppConstants.BkashNumber</strong></div>
+                                    }
+                                }
+                                if (isAdmin && r.Invoice != null)
+                                {
+                                    <a asp-controller="Reports" asp-action="DownloadInvoicePdf" asp-route-id="@r.Invoice.Id"
+                                       class="btn btn-sm btn-outline-danger ms-1" title="Download invoice PDF">PDF</a>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        @if (!isAdmin)
+                        {
+                            <td class="text-end">
+                                @if (!r.IsReturned)
+                                {
+                                    <form asp-action="ReturnOwn" asp-route-id="@r.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                onclick="return confirm('Return this book? A late-return fine will be applied if applicable.');">Return</button>
+                                    </form>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

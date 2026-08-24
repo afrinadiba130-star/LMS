@@ -1,0 +1,42 @@
+@model ReturnViewModel
+
+<div class="card shadow-sm">
+    <div class="card-header bg-warning"><h5 class="mb-0">Return Preview</h5></div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Book</dt>
+            <dd class="col-sm-8"><strong>@Model.BookTitle</strong></dd>
+
+            <dt class="col-sm-4">Member</dt>
+            <dd class="col-sm-8">@Model.MemberName <span class="badge text-bg-secondary ms-1">@Model.MemberType</span></dd>
+
+            <dt class="col-sm-4">Borrowed / Due</dt>
+            <dd class="col-sm-8">@Model.BorrowDate?.ToString("dd MMM yyyy") &rarr; @Model.DueDate?.ToString("dd MMM yyyy")</dd>
+
+            <dt class="col-sm-4">Days late</dt>
+            <dd class="col-sm-8">
+                @if (Model.OverdueDays > 0)
+                {
+                    <span class="badge text-bg-danger">@Model.OverdueDays days</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-success">On time</span>
+                }
+            </dd>
+
+            <dt class="col-sm-4">Projected fine</dt>
+            <dd class="col-sm-8">
+                @if (Model.ProjectedFine > 0)
+                {
+                    <strong class="text-danger">Tk @Model.ProjectedFine.ToString("N2")</strong>
+                    <span class="text-muted small">(@Model.OverdueDays days &times; Tk @Model.FineRatePerDay.ToString("N2")/day)</span>
+                }
+                else
+                {
+                    <span class="text-success">Tk 0.00 — no fine</span>
+                }
+            </dd>
+        </dl>
+    </div>
+</div>

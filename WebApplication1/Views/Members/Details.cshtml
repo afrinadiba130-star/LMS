@@ -1,0 +1,199 @@
+@model MemberDetailsViewModel
+@{
+    ViewData["Title"] = "Member Details";
+    var member = Model.Member;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Member Details</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back to Members</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Profile</h5></div>
+            <div class="card-body">
+                <h5>@member.FullName</h5>
+                <p class="mb-1 text-muted">@member.Email</p>
+                <p class="mb-1">
+                    Member Type: <span class="badge text-bg-secondary">@member.UserType.TypeName</span>
+                </p>
+                <p class="mb-1">
+                    Borrow limit: <strong>@member.UserType.MaxBorrowLimit</strong> books
+                </p>
+                <p class="mb-1">
+                    Fine rate: <strong>Tk @member.UserType.FineRatePerDay.ToString("N2")/day</strong>
+                </p>
+                <p class="mb-0">
+                    Active borrows:
+                    <strong>@member.BorrowRecords.Count(r => !r.IsReturned)</strong>
+                </p>
+
+                <hr />
+                <form asp-action="ChangeType" method="post" class="mt-2">
+                    <input type="hidden" name="userId" value="@member.Id" />
+                    <label class="form-label fw-bold">Change member type</label>
+                    <select name="userTypeId" class="form-select mb-2">
+                        @foreach (var t in Model.UserTypes)
+                        {
+                            var isSelected = t.Value == member.UserTypeId.ToString();
+                            <option value="@t.Value" selected="@isSelected">@t.Text</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-primary w-100">Update Type</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-secondary text-white"><h5 class="mb-0">Borrow History (@member.BorrowRecords.Count)</h5></div>
+            <div class="card-body p-0">
+                @if (member.BorrowRecords.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No borrow records.</p>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Book</th>
+                                <th>Borrowed</th>
+                                <th>Due</th>
+                                <th>Returned</th>
+                                <th>Status</th>
+                                <th>Fine</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in member.BorrowRecords.OrderByDescending(r => r.BorrowDate))
+                            {
+                                <tr>
+                                    <td>@r.Book.Title <small class="text-muted d-block">@r.Book.Author</small></td>
+                                    <td>@r.BorrowDate.ToString("dd MMM yyyy")</td>
+                                    <td>@r.DueDate.ToString("dd MMM yyyy")</td>
+                                    <td>@(r.ReturnDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                                    <td>
+                                        @if (r.IsReturned)
+                                        {
+                                            <span class="badge text-bg-success">Returned</span>
+                                        }
+                                        else if (r.DueDate < DateTime.Today)
+                                        {
+                                            <span class="badge text-bg-danger">Overdue</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-primary">Borrowed</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (r.FineAmount > 0)
+                                        {
+                                            <span class="badge text-bg-danger">Tk @r.FineAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Payments (bKash)</h5></div>
+            <div class="card-body p-0">
+                @if (member.Payments.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No payments recorded.</p>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr><th>Date</th><th>Type</th><th>Amount</th><th>TrxID</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pay in member.Payments.OrderByDescending(p => p.PaidDate))
+                            {
+                                <tr>
+                                    <td>@pay.PaidDate.ToString("dd MMM yyyy HH:mm")</td>
+                                    <td>
+                                        @if (pay.PaymentType == WebApplication1.AppConstants.MembershipPayment)
+                                        {
+                                            <span class="badge text-bg-info">Membership</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-warning">Fine</span>
+                                        }
+                                    </td>
+                                    <td><strong>Tk @pay.Amount.ToString("N2")</strong></td>
+                                    <td class="small">@pay.BkashTrxId</td>
+                                    <td class="text-end">
+                                        <a asp-controller="Payments" asp-action="DownloadReceipt" asp-route-id="@pay.Id"
+                                           class="btn btn-sm btn-outline-primary">Receipt</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0">Invoices</h5></div>
+            <div class="card-body p-0">
+                @{
+                    var invoices = member.BorrowRecords.Where(r => r.Invoice != null).Select(r => r.Invoice!).ToList();
+                }
+                @if (invoices.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No fines/invoices.</p>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr><th>Invoice #</th><th>Book</th><th>Issued</th><th>Amount</th><th>Status</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var inv in invoices)
+                            {
+                                <tr>
+                                    <td>#@inv.Id.ToString("D6")</td>
+                                    <td>@inv.BorrowRecord.Book.Title</td>
+                                    <td>@inv.IssuedDate.ToString("dd MMM yyyy")</td>
+                                    <td><strong>Tk @inv.TotalFine.ToString("N2")</strong></td>
+                                    <td>
+                                        @if (inv.IsPaid)
+                                        {
+                                            <span class="badge text-bg-success">Paid</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-danger">Unpaid</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-controller="Reports" asp-action="DownloadInvoicePdf" asp-route-id="@inv.Id"
+                                           class="btn btn-sm btn-outline-danger">PDF</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>

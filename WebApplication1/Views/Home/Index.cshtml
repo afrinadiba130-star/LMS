@@ -1,0 +1,45 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold text-primary">Library Management System</h1>
+    <p class="lead mt-3">Manage borrows, fines (BDT), and book recommendations for your library.</p>
+    <hr class="my-4 w-50 mx-auto" />
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title">Member Benefits by Type</h5>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Member Type</th>
+                                <th>Max Books</th>
+                                <th>Fine Rate</th>
+                                <th>Fee / Month</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Regular</td><td>2 books</td><td>Tk 20 / day late</td><td>Tk 100</td></tr>
+                            <tr><td>Pro Member</td><td>4 books</td><td>Tk 10 / day late</td><td>Tk 150</td></tr>
+                            <tr><td>Premium</td><td>8 books</td><td>No fines</td><td>Tk 250</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="small text-muted mt-2 mb-0">Membership fee payable via bKash <strong>Send Money</strong> to <strong>01639459501</strong> (TrxID required at registration).</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a asp-controller="Books" asp-action="Index" class="btn btn-primary btn-lg px-4 me-2">Browse Catalog (250 books)</a>
+                @if (!User.Identity!.IsAuthenticated)
+                {
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary btn-lg px-4">Join the Library</a>
+                }
+                else
+                {
+                    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-primary btn-lg px-4">Go to Dashboard</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

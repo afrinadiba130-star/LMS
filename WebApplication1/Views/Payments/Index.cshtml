@@ -1,0 +1,101 @@
+@model List<Payment>
+@{
+    ViewData["Title"] = "Payments";
+    var selected = (string?)ViewBag.SelectedType;
+}
+
+<h4 class="mb-3">bKash Payments <span class="text-muted small">(Total: Tk @ViewBag.TotalAmount.ToString("N2"))</span></h4>
+
+<div class="btn-group mb-3">
+    <a asp-action="Index" class="btn btn-sm @(selected is null ? "btn-primary" : "btn-outline-primary")">All</a>
+    <a asp-action="Index" asp-route-type="@WebApplication1.AppConstants.MembershipPayment"
+       class="btn btn-sm @(selected == WebApplication1.AppConstants.MembershipPayment ? "btn-primary" : "btn-outline-primary")">Membership</a>
+    <a asp-action="Index" asp-route-type="@WebApplication1.AppConstants.FinePayment"
+       class="btn btn-sm @(selected == WebApplication1.AppConstants.FinePayment ? "btn-primary" : "btn-outline-primary")">Fine</a>
+</div>
+
+<form asp-action="DownloadReport" method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-auto">
+        <label class="form-label small mb-1">Report type</label>
+        <select name="type" class="form-select form-select-sm">
+            <option value="">All payments</option>
+            <option value="@WebApplication1.AppConstants.MembershipPayment">Membership</option>
+            <option value="@WebApplication1.AppConstants.FinePayment">Fine</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label small mb-1">Month</label>
+        <select name="month" class="form-select form-select-sm">
+            @for (var m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == DateTime.Today.Month)">@(new DateTime(DateTime.Today.Year, m, 1).ToString("MMMM"))</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label small mb-1">Year</label>
+        <select name="year" class="form-select form-select-sm">
+            @for (var y = DateTime.Today.Year - 1; y <= DateTime.Today.Year + 1; y++)
+            {
+                <option value="@y" selected="@(y == DateTime.Today.Year)">@y</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Download Payments Report (PDF)</button>
+    </div>
+</form>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">No payments recorded yet.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Member</th>
+                    <th>Amount (BDT)</th>
+                    <th>TrxID</th>
+                    <th>Sender</th>
+                    <th>Invoice</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>@p.PaidDate.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>
+                            @if (p.PaymentType == WebApplication1.AppConstants.MembershipPayment)
+                            {
+                                <span class="badge text-bg-info">Membership</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-warning">Fine</span>
+                            }
+                        </td>
+                        <td>@p.User.FullName <span class="badge text-bg-secondary ms-1">@p.User.UserType?.TypeName</span></td>
+                        <td><strong>Tk @p.Amount.ToString("N2")</strong></td>
+                        <td>@p.BkashTrxId</td>
+                        <td>@p.SenderNumber</td>
+                        <td>
+                            <a asp-action="DownloadReceipt" asp-route-id="@p.Id"
+                               class="btn btn-sm btn-outline-primary me-1" title="Download payment receipt PDF">Receipt</a>
+                            @if (p.InvoiceId.HasValue)
+                            {
+                                <a asp-controller="Reports" asp-action="DownloadInvoicePdf" asp-route-id="@p.InvoiceId.Value"
+                                   class="btn btn-sm btn-outline-danger">Inv #@p.InvoiceId.Value.ToString("D6")</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

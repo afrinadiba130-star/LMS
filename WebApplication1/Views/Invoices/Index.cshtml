@@ -1,0 +1,80 @@
+@model List<Invoice>
+@{
+    ViewData["Title"] = "Invoices";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Fines &amp; Invoices <small class="text-muted fs-6">(@Model.Count)</small></h2>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search member or book..." />
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            <option value="unpaid" selected="@(ViewBag.Status == "unpaid")">Unpaid only</option>
+            <option value="paid" selected="@(ViewBag.Status == "paid")">Paid only</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info">No invoices match your filters.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Member</th>
+                    <th>Book</th>
+                    <th>Issued</th>
+                    <th>Amount (BDT)</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var inv in Model)
+                {
+                    <tr>
+                        <td>#@inv.Id.ToString("D6")</td>
+                        <td>@inv.User.FullName <small class="text-muted d-block">@inv.User.Email</small></td>
+                        <td>@inv.BorrowRecord.Book.Title</td>
+                        <td>@inv.IssuedDate.ToString("dd MMM yyyy")</td>
+                        <td><strong>Tk @inv.TotalFine.ToString("N2")</strong></td>
+                        <td>
+                            @if (inv.IsPaid)
+                            {
+                                <span class="badge text-bg-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-danger">Unpaid</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-controller="Reports" asp-action="DownloadInvoicePdf" asp-route-id="@inv.Id"
+                               class="btn btn-sm btn-outline-danger">PDF</a>
+                            @if (!inv.IsPaid)
+                            {
+                                <form asp-action="MarkPaid" asp-route-id="@inv.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success"
+                                            onclick="return confirm('Mark invoice #@inv.Id.ToString("D6") as paid?');">Mark Paid</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

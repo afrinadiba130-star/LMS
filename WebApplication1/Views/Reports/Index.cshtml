@@ -1,0 +1,152 @@
+@model ReportsIndexViewModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<h2 class="mb-4">PDF Reports &amp; Invoices</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0">Fine Invoice (BDT)</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Download a per-member fine invoice for any unpaid invoice.</p>
+                @if (Model.UnpaidInvoices.Count == 0)
+                {
+                    <p class="text-muted mb-0">No unpaid invoices.</p>
+                }
+                else
+                {
+                    <select id="invoiceSelect" class="form-select mb-2">
+                        @foreach (var inv in Model.UnpaidInvoices)
+                        {
+                            <option value="@inv.Id">
+                                #@inv.Id.ToString("D6") — @inv.User.FullName — Tk @inv.TotalFine.ToString("N2")
+                            </option>
+                        }
+                    </select>
+                    <a id="downloadInvoiceBtn" class="btn btn-danger w-100" asp-action="DownloadInvoicePdf" asp-route-id="@Model.UnpaidInvoices.First().Id">
+                        Download Invoice PDF
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Monthly Borrowing Summary</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Borrows, returns, fines collected, and top books for a month.</p>
+                <div class="row g-2 mb-2">
+                    <div class="col-7">
+                        <select id="monthSelect" class="form-select">
+                            @for (var m = 1; m <= 12; m++)
+                            {
+                                <option value="@m" selected="@(m == ViewBag.CurrentMonth)">@(new DateTime(2000, m, 1).ToString("MMMM"))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <select id="yearSelect" class="form-select">
+                            @for (var y = 2020; y <= ViewBag.CurrentYear; y++)
+                            {
+                                <option value="@y" selected="@(y == ViewBag.CurrentYear)">@y</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <a id="downloadMonthlyBtn" class="btn btn-primary w-100"
+                   asp-action="DownloadMonthlyPdf" asp-route-year="@ViewBag.CurrentYear" asp-route-month="@ViewBag.CurrentMonth">
+                    Download Monthly Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white"><h5 class="mb-0">Most Borrowed Books</h5></div>
+            <div class="card-body">
+                <p class="small text-muted">Top-N ranking by borrow frequency.</p>
+                <input id="topCountInput" type="number" class="form-control mb-2" value="10" min="1" max="50" />
+                <a id="downloadTopBtn" class="btn btn-success w-100" asp-action="DownloadMostBorrowedPdf" asp-route-topCount="10">
+                    Download Top-10 Report
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-secondary text-white"><h5 class="mb-0">Recently Issued Invoices</h5></div>
+    <div class="card-body p-0">
+        @if (Model.RecentInvoices.Count == 0)
+        {
+            <p class="text-muted m-3 mb-0">No invoices generated yet. Invoices are created automatically when a book is returned late.</p>
+        }
+        else
+        {
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Member</th>
+                        <th>Book</th>
+                        <th>Issued</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inv in Model.RecentInvoices)
+                    {
+                        <tr>
+                            <td>#@inv.Id.ToString("D6")</td>
+                            <td>@inv.User.FullName</td>
+                            <td>@inv.BorrowRecord.Book.Title</td>
+                            <td>@inv.IssuedDate.ToString("dd MMM yyyy")</td>
+                            <td><strong>Tk @inv.TotalFine.ToString("N2")</strong></td>
+                            <td>
+                                @if (inv.IsPaid)
+                                {
+                                    <span class="badge text-bg-success">Paid</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-danger">Unpaid</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="DownloadInvoicePdf" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-danger">PDF</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#invoiceSelect').on('change', function () {
+            $('#downloadInvoiceBtn').attr('href',
+                '@Url.Action("DownloadInvoicePdf", "Reports")' + '?id=' + $(this).val());
+        });
+
+        $('#monthSelect, #yearSelect').on('change', function () {
+            $('#downloadMonthlyBtn').attr('href',
+                '@Url.Action("DownloadMonthlyPdf", "Reports")' +
+                '?year=' + $('#yearSelect').val() + '&month=' + $('#monthSelect').val());
+        });
+
+        $('#topCountInput').on('input', function () {
+            const n = Math.min(Math.max(parseInt($(this).val() || '10', 10), 1), 50);
+            $('#downloadTopBtn').attr('href',
+                '@Url.Action("DownloadMostBorrowedPdf", "Reports")' + '?topCount=' + n)
+                .text('Download Top-' + n + ' Report');
+        });
+    </script>
+}

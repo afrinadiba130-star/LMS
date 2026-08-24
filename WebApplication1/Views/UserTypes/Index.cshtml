@@ -1,0 +1,37 @@
+@model List<UserType>
+@{
+    ViewData["Title"] = "User Types";
+}
+
+<h2 class="mb-4">Member Type Rules</h2>
+<p class="text-muted">These rules control the borrow limit and daily fine rate (BDT) for each member type.</p>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>Type</th>
+                <th>Max Borrow Limit</th>
+                <th>Fine Rate / Day (Tk)</th>
+                <th>Monthly Fee (Tk)</th>
+                <th>Description</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td><strong>@t.TypeName</strong></td>
+                    <td>@t.MaxBorrowLimit books</td>
+                    <td>Tk @t.FineRatePerDay.ToString("N2")</td>
+                    <td>Tk @t.MonthlyFee.ToString("N2")</td>
+                    <td class="text-muted">@t.Description</td>
+                    <td class="text-end">
+                        <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

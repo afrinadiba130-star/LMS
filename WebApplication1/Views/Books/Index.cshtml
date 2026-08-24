@@ -1,0 +1,119 @@
+@model List<Book>
+@{
+    ViewData["Title"] = "Books";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Book Catalog <small class="text-muted fs-6">(@Model.Count books)</small></h2>
+    @if (isAdmin)
+    {
+        <a asp-action="Create" class="btn btn-primary">+ Add Book</a>
+    }
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-5">
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search by title, author or ISBN..." />
+    </div>
+    <div class="col-md-4">
+        <select name="genre" class="form-select">
+            <option value="">All genres</option>
+            @foreach (var g in ViewBag.Genres as List<string> ?? new())
+            {
+                <option value="@g" selected="@(ViewBag.Genre == g)">@g</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-warning">No books match your filters.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Genre</th>
+                    <th>Language</th>
+                    <th>Copies</th>
+                    <th>Availability</th>
+                    @if (isAdmin)
+                    {
+                        <th></th>
+                    }
+                    else if (User.Identity!.IsAuthenticated)
+                    {
+                        <th class="text-end">Action</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var book in Model)
+                {
+                    var alreadyBorrowed = ((HashSet<int>)ViewBag.MyActiveBorrows).Contains(book.Id);
+                    <tr>
+                        <td>
+                            <strong>@book.Title</strong>
+                            <div class="small text-muted">ISBN: @book.ISBN</div>
+                        </td>
+                        <td>@book.Author</td>
+                        <td><span class="badge text-bg-secondary">@book.Genre</span></td>
+                        <td>@book.Language</td>
+                        <td>@book.AvailableCopies / @book.TotalCopies</td>
+                        <td>
+                            @if (book.AvailableCopies > 0)
+                            {
+                                <span class="badge text-bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-danger">Out of stock</span>
+                            }
+                        </td>
+                        @if (isAdmin)
+                        {
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@book.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <form asp-action="Delete" asp-route-id="@book.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this book?');">Delete</button>
+                                </form>
+                            </td>
+                        }
+                        else if (User.Identity.IsAuthenticated)
+                        {
+                            <td class="text-end">
+                                @if (alreadyBorrowed)
+                                {
+                                    <span class="badge text-bg-info">Borrowed by you</span>
+                                }
+                                else if (book.AvailableCopies <= 0)
+                                {
+                                    <span class="badge text-bg-secondary">Unavailable</span>
+                                }
+                                else if ((int)ViewBag.MyBorrowCount >= (int)ViewBag.MyBorrowLimit)
+                                {
+                                    <span class="badge text-bg-warning" title="Return a book first">Limit reached</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="Borrow" asp-route-id="@book.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">Borrow</button>
+                                    </form>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
