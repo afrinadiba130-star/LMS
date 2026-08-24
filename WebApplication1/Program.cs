@@ -26,7 +26,17 @@ namespace WebApplication1
             string connectionString;
             if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
             {
-                var connBuilder = new NpgsqlConnectionStringBuilder(databaseUrl);
+                var uri = new Uri(databaseUrl);
+                var connBuilder = new NpgsqlConnectionStringBuilder
+                {
+                    Host = uri.Host,
+                    Port = uri.Port > 0 ? uri.Port : 5432,
+                    Database = uri.AbsolutePath.TrimStart('/'),
+                    Username = uri.UserInfo.Split(':')[0],
+                    Password = uri.UserInfo.Split(':').Length > 1 ? uri.UserInfo.Split(':')[1] : "",
+                    SslMode = SslMode.Require,
+                    TrustServerCertificate = true
+                };
                 connectionString = connBuilder.ConnectionString;
                 Console.WriteLine($"Parsed connection string: Host={connBuilder.Host}, Port={connBuilder.Port}, Database={connBuilder.Database}, Username={connBuilder.Username}");
             }
