@@ -19,6 +19,9 @@ namespace WebApplication1
 
             var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                 ?? builder.Configuration.GetConnectionString("LibraryDb");
+            connectionString = connectionString.Trim('"', '\'');
+            if (connectionString.StartsWith("postgres://"))
+                connectionString = "postgresql://" + connectionString.Substring("postgres://".Length);
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
