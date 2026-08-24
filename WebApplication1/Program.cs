@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using QuestPDF.Infrastructure;
 using WebApplication1.Data;
 using WebApplication1.Models.Entities;
@@ -17,15 +18,24 @@ namespace WebApplication1
 
             builder.Services.AddControllersWithViews();
 
-            var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
                 ?? builder.Configuration.GetConnectionString("LibraryDb");
             Console.WriteLine($"DATABASE_URL raw: {Environment.GetEnvironmentVariable("DATABASE_URL")}");
-            Console.WriteLine($"Connection string before trim: '{connectionString}'");
-            connectionString = connectionString?.Trim('"', '\'');
-            Console.WriteLine($"Connection string after trim: '{connectionString}'");
-            if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
-                connectionString = "postgresql://" + connectionString.Substring("postgres://".Length);
-            Console.WriteLine($"Final connection string prefix: {connectionString?.Substring(0, Math.Min(30, connectionString.Length))}");
+            Console.WriteLine($"Connection string before parse: '{databaseUrl}'");
+
+            string connectionString;
+            if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
+            {
+                var builder = new NpgsqlConnectionStringBuilder(databaseUrl);
+                connectionString = builder.ConnectionString;
+                Console.WriteLine($"Parsed connection string: Host={builder.Host}, Port={builder.Port}, Database={builder.Database}, Username={builder.Username}");
+            }
+            else
+            {
+                connectionString = databaseUrl;
+            }
+
+            Console.WriteLine($"Final connection string: {connectionString}");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
