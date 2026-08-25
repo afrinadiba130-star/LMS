@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite;
 using Npgsql;
 using QuestPDF.Infrastructure;
 using WebApplication1.Data;
@@ -18,12 +19,10 @@ namespace WebApplication1
 
             builder.Services.AddControllersWithViews();
 
-            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-                ?? builder.Configuration.GetConnectionString("LibraryDb");
-            Console.WriteLine($"DATABASE_URL raw: {Environment.GetEnvironmentVariable("DATABASE_URL")}");
-            Console.WriteLine($"Connection string before parse: '{databaseUrl}'");
-
+            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
             string connectionString;
+            bool usePostgres;
+
             if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgres", StringComparison.OrdinalIgnoreCase))
             {
                 var uri = new Uri(databaseUrl);
@@ -38,16 +37,26 @@ namespace WebApplication1
                     TrustServerCertificate = true
                 };
                 connectionString = connBuilder.ConnectionString;
-                Console.WriteLine($"Parsed connection string: Host={connBuilder.Host}, Port={connBuilder.Port}, Database={connBuilder.Database}, Username={connBuilder.Username}");
+                usePostgres = true;
+                Console.WriteLine($"Using PostgreSQL: Host={connBuilder.Host}, Port={connBuilder.Port}, Database={connBuilder.Database}");
             }
             else
             {
-                connectionString = databaseUrl;
+                var dataDir = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+                Directory.CreateDirectory(dataDir);
+                var dbPath = Path.Combine(dataDir, "library.db");
+                connectionString = $"Data Source={dbPath}";
+                usePostgres = false;
+                Console.WriteLine($"Using SQLite: {dbPath}");
             }
 
-            Console.WriteLine($"Final connection string: {connectionString}");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            {
+                if (usePostgres)
+                    options.UseNpgsql(connectionString);
+                else
+                    options.UseSqlite(connectionString);
+            });
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
                 {
